@@ -7,6 +7,8 @@ import datetime
 import argparse
 import termcolor
 import threading
+import concurrent.futures
+
 
 parser = argparse.ArgumentParser(
     description="Check if hosts are up.",
@@ -17,7 +19,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "-i",
     "--interval",
-    help="The interval in minutes between checks (default 15)",
+    help="The interval in minutes between checks (default 5)",
     default=5,
     type=int,
 )
@@ -62,7 +64,27 @@ parser.add_argument(
     default="tcp",
     type=str,
 )
-
+parser.add_argument(
+    "-z",
+    "--thread",
+    help="The needed threads (default 5)",
+    default=5,
+    type=int,
+)
+parser.add_argument(
+    "-x",
+    "--allport",
+    help="Scan all port(default 0)",
+    default=0,
+    type=int,
+)
+parser.add_argument(
+    "-n",
+    "--run",
+    help="Run in all thread(default 0)",
+    default=0,
+    type=int,
+)
 args = parser.parse_args()
 
 ports = [
@@ -93,6 +115,9 @@ start = args.start
 end = args.end
 interval = args.interval
 connection_type = args.connection
+thread = args.thread
+allport = args.allport == 1
+run = args.run == 1
 
 
 def println(string, indent, color="white"):
@@ -200,29 +225,9 @@ def parseHost(host):
     if checkHost(host):
         host["status"] = "up"
         color = "green"
-        if prestatus == "down":
-            changes.append(
-                host["ip"]
-                + ":"
-                + str(host["port"])
-                + ":"
-                + host["conntype"]
-                + " is "
-                + host["status"]
-            )
     else:
         host["status"] = "down"
         color = "red"
-        if prestatus == "up":
-            changes.append(
-                host["ip"]
-                + ":"
-                + str(host["port"])
-                + ":"
-                + host["conntype"]
-                + " is "
-                + host["status"]
-            )
 
     println(
         "Status of "
@@ -237,33 +242,51 @@ def parseHost(host):
         color,
     )
 
+    time.sleep(1)
+
 
 def run():
     host_list = []
     for ip in hosts:
-
-        for port in ports:
-            if port > start and port < end:
+        if allport:
+            for i in range(65353):
                 host_list.append(
                     {
                         "ip": ip,
-                        "port": port,
+                        "port": i,
                         "conntype": connection_type,
                         "status": "unknown",
                     }
                 )
+        else:
+            for port in ports:
+                if port > start and port < end:
+                    host_list.append(
+                        {
+                            "ip": ip,
+                            "port": port,
+                            "conntype": connection_type,
+                            "status": "unknown",
+                        }
+                    )
 
     while True:
-        threads = []
-        for host in host_list:
-            t = threading.Thread(target=parseHost, args=(host,))
-            threads.append(t)
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
 
-        del threads[:]
+        if run:
+            threads = []
+            for host in host_list:
+                t = threading.Thread(target=parseHost, args=(host,))
+                threads.append(t)
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+            del threads[:]
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=thread) as executor:
+                executor.map(parseHost, host_list)
+
         println("Waiting " + str(interval) + " minutes for next check.", 0, "yellow")
 
         try:
