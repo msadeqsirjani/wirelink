@@ -6,8 +6,8 @@ import time
 import sys
 import struct
 import select
-import signal
 import argparse
+import signal
 import threading
 
 timer = time.time
@@ -297,6 +297,22 @@ def create_parser():
 
 
 def ping(destination_server, timeout=1000, count=1000, packet_size=55):
+
+    threads = []
+    for host in destination_server:
+        p = Ping(host, count, timeout, packet_size)
+        t = threading.Thread(target=p.start_ping)
+        threads.append(t)
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+
+def seq_ping(destination_server, timeout=1000, count=1000, packet_size=55):
+
     for host in destination_server:
         p = Ping(host, count, timeout, packet_size)
         p.start_ping()
