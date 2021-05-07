@@ -296,26 +296,29 @@ def create_parser():
     return parser
 
 
+def is_any_thread_alive(threads):
+    return True in [t.is_alive() for t in threads]
+
+
 def ping(destination_server, timeout=1000, count=1000, packet_size=55):
 
     threads = []
-    for host in destination_server:
-        p = Ping(host, count, timeout, packet_size)
-        t = threading.Thread(target=p.start_ping)
-        threads.append(t)
+    processes = []
+    try:
+        for host in destination_server:
+            p = Ping(host, count, timeout, packet_size)
+            processes.append(p)
+            t = threading.Thread(target=p.start_ping, daemon=True)
+            threads.append(t)
 
-    for thread in threads:
-        thread.start()
+        for thread in threads:
+            thread.start()
 
-    for thread in threads:
-        thread.join()
-
-
-def seq_ping(destination_server, timeout=1000, count=1000, packet_size=55):
-
-    for host in destination_server:
-        p = Ping(host, count, timeout, packet_size)
-        p.start_ping()
+        while is_any_thread_alive(threads):
+            time.sleep(0)
+    except KeyboardInterrupt:
+        for process in processes:
+            process.print_exit()
 
 
 if __name__ == '__main__':
