@@ -147,8 +147,6 @@ class Ping:
         except KeyboardInterrupt:  # handle Ctrl+C
             print()
 
-        self.print_exit()
-
     def pinger(self):
 
         try:
@@ -308,6 +306,7 @@ def ping(destination_server, timeout=1000, count=1000, packet_size=55):
         for host in destination_server:
             p = Ping(host, count, timeout, packet_size)
             processes.append(p)
+
             t = threading.Thread(target=p.start_ping, daemon=True)
             threads.append(t)
 
@@ -317,6 +316,8 @@ def ping(destination_server, timeout=1000, count=1000, packet_size=55):
         while is_any_thread_alive(threads):
             time.sleep(0)
     except KeyboardInterrupt:
+        pass
+    finally:
         for process in processes:
             process.print_exit()
 
