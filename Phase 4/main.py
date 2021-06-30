@@ -42,7 +42,7 @@ class Arp:
                 '!BBBBBB', *[int(oc, 16) for oc in mac_address(self.interface).split(spliter)])
 
             destination_mac_address: bytes = pack(
-                '!BBBBBB', *[int(oc, 16) for oc in self.dest.split(spliter)])
+                '!BBBBBB', *[int(oc, 16) for oc in self.destination.split(spliter)])
 
             ethernet_header: bytes = pack(
                 '!6s6sH', destination_mac_address, source_mac_address, 0x0806)
@@ -59,20 +59,19 @@ class Arp:
                                      source_mac_address,
                                      socket.inet_aton(source_ip),
                                      destination_mac_address,
-                                     socket.inet_aton(self.dest_ip))
+                                     socket.inet_aton(self.destination_ip))
 
             packet: bytes = ethernet_header + arp_header
 
             try:
-                request.settimeout(self.timeout)
+                request.settimeout(timeout)
                 request.send(packet)
                 raw_data: bytes = request.recv(42)
                 raw_data = unpack('!6s6sH HHBBH6s4s6s4s', raw_data)
 
-                if raw_data[7] == 2:
-                    unpacked_data: List[int] = unpack('!BBBBBB', raw_data[8])    
-                    unpacked_data = [format(x, '02x') for x in unpacked_data]
-                    return ':'.join(unpacked_data)
+                unpacked_data: List[int] = unpack('!BBBBBB', raw_data[8])    
+                unpacked_data = [hex(x) for x in unpacked_data]
+                return ':'.join(unpacked_data)
             except:
                 return None
 
@@ -108,7 +107,7 @@ def arp_request(ip_range, start, end, timeout, interface):
                           destination_ip=ip, timeout=timeout)
         if host_status is not None:
             print("Host {ip} is up | mac address = ".format(
-                ip=ip) + host_status)
+                ip=ip) + host_status.start_arp_request(timeout=timeout))
 
 
 if __name__ == '__main__':
