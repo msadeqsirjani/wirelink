@@ -1,6 +1,6 @@
-# WIRENET
+# WIRELINK
 
-WIRENET is a cli application written in PYTHON for utilizing network monitoring. It can sniff ports and packets, ping multiple hosts simultaneously and traceroute any host! It supports IPV4 ping and tracerouting.
+WIRELINK is a cli application written in PYTHON for utilizing network monitoring. It can sniff ports and packets, ping multiple hosts simultaneously and traceroute any host! It supports IPV4 ping and tracerouting.
 
 ## Abilities
 
